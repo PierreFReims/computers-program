@@ -2,15 +2,15 @@ Write-Host "
     1 - Changer le nom du poste
     2 - Ajouter le poste sur le domaine AMCMZ
 "
-$choice = Read-Host "Choix"
+$choice = Read-Host "[+] Choix"
 
 while ($choice -notin (1,2)) {
-    $choice = Read-Host "Choix"    
+    $choice = Read-Host "[+] Choix"    
 }
 
 switch ($choice) {
     1 { 
-        $choice = Read-Host "Nom actuel: $Env:ComputerName
+        $choice = Read-Host "[+] Nom actuel: $Env:ComputerName
 souhaitez vous poursuivre la modification? [y/n]"
         while ($choice -notin ('y','n')) {
             $choice = Read-Host "Nom actuel: $Env:ComputerName
@@ -34,13 +34,13 @@ souhaitez vous poursuivre la modification? [y/n]"
     }
     2 {
         Write-Host "Ajout du poste au domaine AMCMZ"
-        $account = Read-Host "Saisissez votre compte administrateur de domaine"
+        $account = Read-Host "[+] Saisissez votre compte administrateur de domaine"
         $domain = "amcmz.lan"
         $domainaccount = "AMCMZ\$account"
         Write-Host "Le poste va être ajouté au domaine $domain avec le nom $env:computername"
-        $choice = Read-Host "Voulez-vous procéder ? [y/n]"
+        $choice = Read-Host "[+] Voulez-vous procéder ? [y/n]"
         while ($choice -notin ('y','n')) {
-            $choice = Read-Host "Voulez-vous procéder ? [y/n]"  
+            $choice = Read-Host "[+] Voulez-vous procéder ? [y/n]"  
         }
         switch ($choice) {
             'y' {
@@ -58,9 +58,9 @@ souhaitez vous poursuivre la modification? [y/n]"
                         Add-Computer -DomainName $domain -Credential $domainaccount -Force -PassThru -OUPath "ou=Postes,DC=amcmz, DC=lan" | Out-Null
                         Write-Host 'Le poste a été ajouté dans l unité organisationnelle par défaut' -ForegroundColor Green
                     }
-                    $choice = Read-Host "redémarrer l'ordinateur maintenant [y/n]"
+                    $choice = Read-Host "[+] redémarrer l'ordinateur maintenant [y/n]"
                     while ($choice -notin ('y','n')) {
-                        $choice = Read-Host "redémarrer l'ordinateur maintenant [y/n]" 
+                        $choice = Read-Host "[+] redémarrer l'ordinateur maintenant [y/n]" 
                     }
                     switch($choice){
                             y{Restart-computer -Force -Confirm:$false}
