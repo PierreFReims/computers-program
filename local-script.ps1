@@ -79,7 +79,36 @@ souhaitez vous poursuivre la modification? [y/n]"
         }
     }
     3 {
+        $choice = Read-Host "[+] Voulez vous quitter le domaine $($env:USERDNSDOMAIN.ToLower()) [y/n]"
+        while ($choice -notin ('y','n')) {
+            $choice = Read-Host "[+] Voulez vous quitter le domaine $($env:USERDNSDOMAIN.ToLower()) [y/n]"   
+        }
+        switch ($choice) {
+            'y' { 
+                try {
+                    $account = Read-Host "Saisissez votre compte administrateur de domaine"
+                    $domainaccount = "AMCMZ\$account"
+                    Remove-Computer -UnjoinDomaincredential $domainaccount -PassThru -Verbose
+                    Write-Host "[+] Le poste a été retiré du domaine" -ForegroundColor Green
+                    $choice = Read-Host "[+] redémarrer l'ordinateur maintenant [y/n]"
+                    while ($choice -notin ('y','n')) {
+                        $choice = Read-Host "[+] redémarrer l'ordinateur maintenant [y/n]" 
+                    }
+                }
+                catch {
+                    Write-Warning -Message "Une erreur s'est produite lors de l'ajout du poste au domaine..."
+                }
+            }
+            'n' { 
+                break
+            }
+            Default {
+                exit
+            }
+        }
         Write-Warning "Fonctionnalité en cours de développement..."
+
+        Start-Sleep -Seconds 5
     }
     Default {
         Exit
