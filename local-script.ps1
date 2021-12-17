@@ -13,18 +13,18 @@ switch ($choice) {
         $choice = Read-Host "[+] Nom actuel: $Env:ComputerName
 souhaitez vous poursuivre la modification? [y/n]"
         while ($choice -notin ('y','n')) {
-            $choice = Read-Host "Nom actuel: $Env:ComputerName
+            $choice = Read-Host "[+] Nom actuel: $Env:ComputerName
 souhaitez vous poursuivre la modification? [y/n]"
         }
         switch ($choice) {
             'y' {
-                Write-Host "Changement du nom du poste"
-                $newname = Read-Host "nouveau nom" 
+                Write-Host "    [+] Changement du nom du poste"
+                $newname = Read-Host "[+] Choisissez le nouveau nom du poste" 
                 try {
                     Rename-Computer -NewName $newname -Force -Restart
                 }
                 catch {
-                    Write-Host "Erreur de traitement..." -ForegroundColor red
+                    Write-Warning -Message "Une erreur s'est produite lors du renommage du poste..."
                 }
             }
             'no' {
@@ -33,11 +33,11 @@ souhaitez vous poursuivre la modification? [y/n]"
         }
     }
     2 {
-        Write-Host "Ajout du poste au domaine AMCMZ"
+        Write-Host "    [+] Ajout du poste au domaine AMCMZ"
         $account = Read-Host "[+] Saisissez votre compte administrateur de domaine"
         $domain = "amcmz.lan"
         $domainaccount = "AMCMZ\$account"
-        Write-Host "Le poste va être ajouté au domaine $domain avec le nom $env:computername"
+        Write-Warning "[+] Le poste va être ajouté au domaine $domain avec le nom $env:computername"
         $choice = Read-Host "[+] Voulez-vous procéder ? [y/n]"
         while ($choice -notin ('y','n')) {
             $choice = Read-Host "[+] Voulez-vous procéder ? [y/n]"  
@@ -56,7 +56,7 @@ souhaitez vous poursuivre la modification? [y/n]"
                         Write-Host 'Le poste a été ajouté au domaine et est déplacé automatiquement son unité organisationnelle' -ForegroundColor Green
                     }else {
                         Add-Computer -DomainName $domain -Credential $domainaccount -Force -PassThru -OUPath "ou=Postes,DC=amcmz, DC=lan" | Out-Null
-                        Write-Host 'Le poste a été ajouté dans l unité organisationnelle par défaut' -ForegroundColor Green
+                        Write-Host "Le poste a été ajouté dans l'unité organisationnelle par défaut" -ForegroundColor Green
                     }
                     $choice = Read-Host "[+] redémarrer l'ordinateur maintenant [y/n]"
                     while ($choice -notin ('y','n')) {
@@ -68,7 +68,7 @@ souhaitez vous poursuivre la modification? [y/n]"
                     }
                 }
                 catch {
-                    Write-Host "Erreur de traitement..." -ForegroundColor red
+                    Write-Warning -Message "Une erreur s'est produite lors de l'ajout du poste au domaine..."
                 }
             }
             'no' {
