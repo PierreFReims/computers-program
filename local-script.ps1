@@ -1,10 +1,12 @@
+$PSDefaultParameterValues['*:Encoding'] = 'utf8'
 Write-Host "
     1 - Changer le nom du poste
     2 - Ajouter le poste sur le domaine AMCMZ
+    3 - Quitter le domaine actuel
 "
 $choice = Read-Host "[+] Choix"
 
-while ($choice -notin (1,2)) {
+while ($choice -notin (1,2,3)) {
     $choice = Read-Host "[+] Choix"    
 }
 
@@ -75,6 +77,9 @@ souhaitez vous poursuivre la modification? [y/n]"
                 break
             }
         }
+    }
+    3 {
+        Write-Warning "Fonctionnalité en cours de développement..."
     }
     Default {
         Exit
