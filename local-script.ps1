@@ -94,6 +94,10 @@ souhaitez vous poursuivre la modification? [y/n]"
                     while ($choice -notin ('y','n')) {
                         $choice = Read-Host "[+] redémarrer l'ordinateur maintenant [y/n]" 
                     }
+                    switch($choice){
+                        y{Restart-computer -Force -Confirm:$false}
+                        n{exit}
+                    }
                 }
                 catch {
                     Write-Warning -Message "Une erreur s'est produite lors de l'ajout du poste au domaine..."
