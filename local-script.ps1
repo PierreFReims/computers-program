@@ -1,32 +1,44 @@
 $PSDefaultParameterValues['*:Encoding'] = 'utf8'
+$ErrorActionPreference = "stop"
+
 Write-Host "
     1 - Changer le nom du poste
-    2 - Ajouter le poste sur le domaine AMCMZ
+    2 - Ajouter le poste sur un domaine
     3 - Quitter le domaine actuel
+    4 - Installation de package
 "
-$choice = Read-Host "[+] Choix"
+Write-Host -ForegroundColor DarkCyan -NoNewline "[+] Choix: "
+$choice = Read-Host
 
-while ($choice -notin (1,2,3)) {
-    $choice = Read-Host "[+] Choix"    
+while ($choice -notin (1,2,3,4)) {
+    Write-Host -ForegroundColor DarkCyan -NoNewline "[+] Choix: "
+    $choice = Read-Host  
 }
 
 switch ($choice) {
     1 { 
-        $choice = Read-Host "[+] Nom actuel: $Env:ComputerName
-souhaitez vous poursuivre la modification? [y/n]"
+        Write-Host -ForegroundColor DarkCyan -NoNewline "[+] Nom actuel: $Env:ComputerName
+souhaitez vous poursuivre la modification? [y/n]: "
+        $choice = Read-Host
         while ($choice -notin ('y','n')) {
-            $choice = Read-Host "[+] Nom actuel: $Env:ComputerName
-souhaitez vous poursuivre la modification? [y/n]"
+            Write-Host -ForegroundColor DarkCyan -NoNewline "[+] Nom actuel: $Env:ComputerName
+souhaitez vous poursuivre la modification? [y/n]: "
+            $choice = Read-Host 
         }
         switch ($choice) {
             'y' {
-                Write-Host "    [+] Changement du nom du poste"
-                $newname = Read-Host "[+] Choisissez le nouveau nom du poste" 
+                Write-Host -ForegroundColor Green -NoNewline "[+] Choisissez le nouveau nom du poste: "
+                $newname = Read-Host
+                while ($newname -eq $Env:ComputerName) {
+                    Write-Host -ForegroundColor Green -NoNewline "[+] Choisissez le nouveau nom du poste: "
+                    $newname = Read-Host
+                }
                 try {
                     Rename-Computer -NewName $newname -Force -Restart
                 }
                 catch {
-                    Write-Warning -Message "Une erreur s'est produite lors du renommage du poste..."
+                    Write-host -ForegroundColor red "[-] Une erreur s'est produite lors du renommage du poste..."
+                    Start-Sleep -Seconds 10
                 }
             }
             'no' {
@@ -35,42 +47,68 @@ souhaitez vous poursuivre la modification? [y/n]"
         }
     }
     2 {
-        Write-Host "    [+] Ajout du poste au domaine AMCMZ"
-        $account = Read-Host "[+] Saisissez votre compte administrateur de domaine"
-        $domain = "amcmz.lan"
-        $domainaccount = "AMCMZ\$account"
-        Write-Warning "[+] Le poste va être ajouté au domaine $domain avec le nom $env:computername"
-        $choice = Read-Host "[+] Voulez-vous procéder ? [y/n]"
+        Write-Host -ForegroundColor Green -NoNewline "[+] Quel domaine voulez vous rejoindre ? "
+        $domain = Read-Host 
+        Write-Host -ForegroundColor Green -NoNewline "[+] Saisissez votre compte administrateur de domaine: "
+        $account = Read-Host
+        $domainaccount = "$domain\$account" 
+        Write-host -ForegroundColor Green "[+] Le poste va etre ajoute au domaine $domain avec le nom $env:computername"
+        Write-Host -ForegroundColor Green -NoNewline "[+] Voulez-vous proceder ? [y/n]: "  
+        $choice = Read-Host 
         while ($choice -notin ('y','n')) {
-            $choice = Read-Host "[+] Voulez-vous procéder ? [y/n]"  
+            Write-Host -ForegroundColor Green -NoNewline "[+] Voulez-vous proceder ? [y/n]: "
+            $choice = Read-Host 
         }
         switch ($choice) {
             'y' {
-                try {
-                    if ($Env:ComputerName -like "CA%") {
-                        Add-Computer -DomainName $domain -Credential $domainaccount -Force -PassThru -OUPath "ou=Agglo,ou=Postes,DC=amcmz, DC=lan" | Out-Null
-                        Write-Host 'Le poste a été ajouté au domaine et est déplacé automatiquement son unité organisationnelle' -ForegroundColor Green
-                    }elseif ($Env:ComputerName -like "CM%") {
-                        Add-Computer -DomainName $domain -Credential $domainaccount -Force -PassThru -OUPath "ou=Mairie,ou=Postes,DC=amcmz, DC=lan" | Out-Null
-                        Write-Host 'Le poste a été ajouté au domaine et est déplacé automatiquement son unité organisationnelle' -ForegroundColor Green
-                    }elseif ($Env:ComputerName -like "CC%") {
-                        Add-Computer -DomainName $domain -Credential $domainaccount -Force -PassThru -OUPath "ou=CCAS,ou=Postes,DC=amcmz, DC=lan" | Out-Null
-                        Write-Host 'Le poste a été ajouté au domaine et est déplacé automatiquement son unité organisationnelle' -ForegroundColor Green
-                    }else {
-                        Add-Computer -DomainName $domain -Credential $domainaccount -Force -PassThru -OUPath "ou=Postes,DC=amcmz, DC=lan" | Out-Null
-                        Write-Host "Le poste a été ajouté dans l'unité organisationnelle par défaut" -ForegroundColor Green
+                if ($Env:ComputerName -like "CA*") {
+                    try {
+                        add-computer -domainname $domain -Credential $domainaccount -OUPath "ou=Agglo,ou=Postes,DC=amcmz, DC=lan"
+                        Write-Host '[+] Le poste a ete ajoute au domaine et est deplace automatiquement dans son unite organisationnelle' -ForegroundColor Green
                     }
-                    $choice = Read-Host "[+] redémarrer l'ordinateur maintenant [y/n]"
-                    while ($choice -notin ('y','n')) {
-                        $choice = Read-Host "[+] redémarrer l'ordinateur maintenant [y/n]" 
-                    }
-                    switch($choice){
-                            y{Restart-computer -Force -Confirm:$false}
-                            n{exit}
+                    catch {
+                        Write-Host -ForegroundColor Red "[-] $_"
+                        Start-Sleep -Seconds 10
                     }
                 }
-                catch {
-                    Write-Warning -Message "Une erreur s'est produite lors de l'ajout du poste au domaine..."
+                elseif ($Env:ComputerName -like "CM*") {
+                    try {
+                        add-computer -domainname $domain -Credential $domainaccount -OUPath "ou=Mairie,ou=Postes,DC=amcmz, DC=lan"
+                        Write-Host '[+] Le poste a ete ajoute au domaine et est deplace automatiquement dans son unite organisationnelle' -ForegroundColor Green
+                    }
+                    catch {
+                        Write-Host -ForegroundColor Red "[-] $_"
+                        Start-Sleep -Seconds 10
+                    }
+                }
+                elseif ($Env:ComputerName -like "CC*") {
+                    try {
+                        add-computer -domainname $domain -Credential $domainaccount -OUPath "ou=CCAS,ou=Postes,DC=amcmz, DC=lan"
+                        Write-Host "[+] Le poste a ete ajoute au domaine et est déplace automatiquement dans son unite organisationnelle" -ForegroundColor Green
+                    }
+                    catch {
+                        Write-Host -ForegroundColor Red "[-] $_"
+                        Start-Sleep -Seconds 10
+                    }
+                }else {
+                    try {
+                        Add-Computer -DomainName $domain -Credential $domainaccount -Force -OUPath "ou=Postes,DC=amcmz, DC=lan"
+                        Write-Host "[+] Le poste a ete ajoute dans l'unite organisationnelle par defaut" -ForegroundColor Green
+                    }
+                    catch {
+                        Write-Host -ForegroundColor Red "[-] $_"
+                        Start-Sleep -Seconds 10
+                    }
+                }
+                Write-Host -ForegroundColor Green "[+] redemarrer l'ordinateur maintenant [y/n]: "
+                $choice = Read-Host 
+                while ($choice -notin ('y','n')) {
+                    Write-Host -ForegroundColor Green "[+] redemarrer l'ordinateur maintenant [y/n]: "
+                    $choice = Read-Host  
+                }
+                switch($choice){
+                    y{Restart-computer -Force -Confirm:$false}
+                    n{exit}
                 }
             }
             'no' {
@@ -79,28 +117,32 @@ souhaitez vous poursuivre la modification? [y/n]"
         }
     }
     3 {
-        $choice = Read-Host "[+] Voulez vous quitter le domaine $($env:USERDNSDOMAIN.ToLower()) [y/n]"
+        $domain = Get-WmiObject -Namespace root\cimv2 -Class Win32_ComputerSystem | Select-Object Name, Domain
+        Write-host -ForegroundColor Green -NoNewline "[+] Voulez vous quitter le domaine $($domain.domain.ToLower()) [y/n]: "
+        $choice = Read-Host 
         while ($choice -notin ('y','n')) {
-            $choice = Read-Host "[+] Voulez vous quitter le domaine $($env:USERDNSDOMAIN.ToLower()) [y/n]"   
+            Write-host -ForegroundColor Green -NoNewline "[+] Voulez vous quitter le domaine $($domain.domain.ToLower()) [y/n]: "
+            $choice = Read-Host 
         }
         switch ($choice) {
             'y' { 
+                $account = Read-Host "Saisissez votre compte administrateur de domaine"
+                $domainaccount = "$($domain.domain)\$account"
                 try {
-                    $account = Read-Host "Saisissez votre compte administrateur de domaine"
-                    $domainaccount = "AMCMZ\$account"
-                    Remove-Computer -UnjoinDomaincredential $domainaccount -PassThru -Verbose
-                    Write-Host "[+] Le poste a été retiré du domaine" -ForegroundColor Green
-                    $choice = Read-Host "[+] redémarrer l'ordinateur maintenant [y/n]"
-                    while ($choice -notin ('y','n')) {
-                        $choice = Read-Host "[+] redémarrer l'ordinateur maintenant [y/n]" 
-                    }
-                    switch($choice){
-                        y{Restart-computer -Force -Confirm:$false}
-                        n{exit}
-                    }
+                    Remove-Computer -UnjoinDomaincredential $domainaccount -Force
+                    Write-Host "[+] Le poste a ete retire du domaine" -ForegroundColor Green
                 }
                 catch {
-                    Write-Warning -Message "Une erreur s'est produite lors de l'ajout du poste au domaine..."
+                    Write-Host -ForegroundColor Red "Une erreur s'est produite lors de la suppression du poste au domaine..."
+                    Write-Host -ForegroundColor Red "$_"
+                }
+                $choice = Read-Host "[+] redemarrer l'ordinateur maintenant [y/n]"
+                while ($choice -notin ('y','n')) {
+                    $choice = Read-Host "[+] redemarrer l'ordinateur maintenant [y/n]" 
+                }
+                switch($choice){
+                    y{Restart-computer -Force -Confirm:$false}
+                    n{exit}
                 }
             }
             'n' { 
@@ -110,8 +152,9 @@ souhaitez vous poursuivre la modification? [y/n]"
                 exit
             }
         }
-        Write-Warning "Fonctionnalité en cours de développement..."
-
+    }
+    4{
+        Write-Warning "Fonctionnalite en cours de developpement..."
         Start-Sleep -Seconds 5
     }
     Default {
