@@ -1,5 +1,64 @@
 $PSDefaultParameterValues['*:Encoding'] = 'utf8'
 $ErrorActionPreference = "stop"
+$programs = ("firefox", "ultravnc", "libreoffice", "anydesk", "adobereader", "googlechrome","zoom","microsoft-teams")
+$listOk = @()
+$someFailed = $false
+$choice = $null
+
+function startProccess{
+    Write-Output "`nverrification packages...`n"
+    foreach($i in $programs){
+        $result = choco find $i
+        if($result.Length -gt 2){
+            $listOk = $listOk + $i
+            $i + ' - ok'
+        }else{
+            $someFailed = $true
+            $i + ' - erreur'
+        }
+    }
+    Write-Output "`n"
+
+    if($someFailed){
+        Write-Warning "Erreur pour certains packages"
+
+        while ($choice -notmatch "[y|n]"){
+            $choice = Read-Host "Voulez-vous proceder ? [y/n:"
+        }
+    }
+
+    $hasUserAccepted = $null -eq $continue -or $continue -eq 'y'
+
+    if($hasUserAccepted){
+        startInstallation
+    }
+    else{
+        Write-Error "Verifiez la liste des packages et reessayez"
+    }
+}
+
+function progressBar{
+    param($percent)
+    Write-Progress -Activity 'Installation en cours' -PercentComplete $percent
+}
+
+function install{
+    param($item)
+    choco install $item -y --acceptlicense --force
+}
+function startInstallation{
+    try{
+        Write-Output "Debut de l'installation `n"
+        for ($i = 1; $i -le $listOk.length; $i++){
+            progressBar(($i/$listOk.length*100))
+            install($listOk[$i - 1])
+        }
+    }
+    catch{
+        Write-Error "Erreur d'installation  des packages"
+    }
+}
+
 do {
     Write-Host "
         1 - Changer le nom du poste
@@ -135,10 +194,10 @@ do {
         }
         3 {
             $domain = Get-WmiObject -Namespace root\cimv2 -Class Win32_ComputerSystem | Select-Object Name, Domain
-            Write-host -ForegroundColor Green -NoNewline "[+] Voulez vous quitter le domaine $($domain.domain.ToLower()) [y/n]: "
+            Write-host -ForegroundColor Green -NoNewline "[+] Voulez vous quitter le domaine $($domain.domain) [y/n]: "
             $choice = Read-Host 
             while ($choice -notin ('y','n')) {
-                Write-host -ForegroundColor Green -NoNewline "[+] Voulez vous quitter le domaine $($domain.domain.ToLower()) [y/n]: "
+                Write-host -ForegroundColor Green -NoNewline "[+] Voulez vous quitter le domaine $($domain.domain) [y/n]: "
                 $choice = Read-Host 
             }
             switch ($choice) {
@@ -176,8 +235,24 @@ do {
         4{
             # packages 
             # firefox[yes], office 2010[yes], libre office[yes], adobe reader dc, vnc, anydesk, accrobat, chrome, teams, zoom, thetris  
-            Write-Warning "Fonctionnalite en cours de developpement..."
-            Start-Sleep -Seconds 5
+            while  ($choice -notin ('y','n','') ) {
+                Write-Host -ForegroundColor Green -NoNewline "[+] Voulez-vous proceder a l'installation des packages [y/n]: "
+                $choice = Read-Host
+            }
+            switch ($choice) {
+                'n' {  
+                    "no"
+                }
+                default {
+                    $inst = $null
+                    foreach ($item in $programs) {
+                        while ($inst -notin ('y','n','')) {
+                            Write-host -foregroundColor Yellow -nonewline "installer $item [y/n]: "
+                            $inst = Read-Host
+                        }
+                    }
+                }
+            }
         }
         Default {
             Exit
