@@ -23,7 +23,7 @@ function startProccess{
         Write-Warning "Erreur pour certains packages"
 
         while ($choice -notmatch "[y|n]"){
-            $choice = Read-Host "Voulez-vous proceder ? [y/n:"
+            $choice = Read-Host "Voulez-vous proceder ? [y/n]:"
         }
     }
 
@@ -65,12 +65,13 @@ do {
         2 - Ajouter le poste sur un domaine
         3 - Quitter le domaine actuel
         4 - Installation de package
+        5 - Redemarrer l'ordinateur
         q - quitter le programme
     "
     Write-Host -ForegroundColor DarkCyan -NoNewline "[+] Choix: "
     $choice = Read-Host
 
-    while ($choice -notin (1,2,3,4,'q')) {
+    while ($choice -notin (1,2,3,4,5,'q')) {
         Write-Host -ForegroundColor DarkCyan -NoNewline "[+] Choix: "
         $choice = Read-Host  
     }
@@ -80,7 +81,7 @@ do {
             Write-Host -ForegroundColor Green -NoNewline "[+] souhaitez vous poursuivre la modification? [y/n]: "
             $choice = Read-Host
             while ($choice -notin ('y','n')) {
-                Write-Host -ForegroundColor DarkCyan -NoNewline "[+] Nom actuel: $Env:ComputerName"
+                Write-Host -ForegroundColor Green "[+] Nom actuel: $Env:ComputerName"
                 Write-Host -ForegroundColor Green -NoNewline "[+] souhaitez vous poursuivre la modification? [y/n]: "
                 $choice = Read-Host 
             }
@@ -132,54 +133,61 @@ do {
                     }
                     switch ($choice) {
                         'y' {
+                            $done = 0
                             if ($Env:ComputerName -like "CA*") {
                                 try {
                                     add-computer -domainname $domain -Credential $domainaccount -OUPath "ou=Agglo,ou=Postes,DC=amcmz, DC=lan"
                                     Write-Host '[+] Le poste a ete ajoute au domaine et est deplace automatiquement dans son unite organisationnelle' -ForegroundColor Green
+                                    $done = 1
                                 }
                                 catch {
                                     Write-Host -ForegroundColor Red "[-] $_"
-                                    Start-Sleep -Seconds 10
+                                    Start-Sleep -Seconds 2
                                 }
                             }
                             elseif ($Env:ComputerName -like "CM*") {
                                 try {
                                     add-computer -domainname $domain -Credential $domainaccount -OUPath "ou=Mairie,ou=Postes,DC=amcmz, DC=lan"
                                     Write-Host '[+] Le poste a ete ajoute au domaine et est deplace automatiquement dans son unite organisationnelle' -ForegroundColor Green
+                                    $done = 1
                                 }
                                 catch {
                                     Write-Host -ForegroundColor Red "[-] $_"
-                                    Start-Sleep -Seconds 10
+                                    Start-Sleep -Seconds 2
                                 }
                             }
                             elseif ($Env:ComputerName -like "CC*") {
                                 try {
                                     add-computer -domainname $domain -Credential $domainaccount -OUPath "ou=CCAS,ou=Postes,DC=amcmz, DC=lan"
                                     Write-Host "[+] Le poste a ete ajoute au domaine et est déplace automatiquement dans son unite organisationnelle" -ForegroundColor Green
+                                    $done = 1
                                 }
                                 catch {
                                     Write-Host -ForegroundColor Red "[-] $_"
-                                    Start-Sleep -Seconds 10
+                                    Start-Sleep -Seconds 2
                                 }
                             }else {
                                 try {
                                     Add-Computer -DomainName $domain -Credential $domainaccount -Force -OUPath "ou=Postes,DC=amcmz, DC=lan"
                                     Write-Host "[+] Le poste a ete ajoute dans l'unite organisationnelle par defaut" -ForegroundColor Green
+                                    $done = 1
                                 }
                                 catch {
                                     Write-Host -ForegroundColor Red "[-] $_"
-                                    Start-Sleep -Seconds 10
+                                    Start-Sleep -Seconds 2
                                 }
                             }
-                            Write-Host -ForegroundColor Green "[+] redemarrer l'ordinateur maintenant [y/n]: "
-                            $choice = Read-Host 
-                            while ($choice -notin ('y','n')) {
+                            if ($done) {
                                 Write-Host -ForegroundColor Green "[+] redemarrer l'ordinateur maintenant [y/n]: "
-                                $choice = Read-Host  
-                            }
-                            switch($choice){
-                                y{Restart-computer -Force -Confirm:$false}
-                                n{exit}
+                                $choice = Read-Host 
+                                while ($choice -notin ('y','n')) {
+                                    Write-Host -ForegroundColor Green "[+] redemarrer l'ordinateur maintenant [y/n]: "
+                                    $choice = Read-Host  
+                                }
+                                switch($choice){
+                                    y{Restart-computer -Force -Confirm:$false}
+                                    n{exit}
+                                }
                             }
                         }
                         'no' {
@@ -208,6 +216,7 @@ do {
                     try {
                         Remove-Computer -UnjoinDomaincredential $domainaccount -Force
                         Write-Host "[+] Le poste a ete retire du domaine" -ForegroundColor Green
+                        Add-Content -Path \\vmstockage\agglo$\DSI\infrastructure\AD\sortie_postes.txt -Value $Env:ComputerName           
                     }
                     catch {
                         Write-Host -ForegroundColor Red "[-] Une erreur s'est produite lors de la suppression du poste au domaine..."
@@ -233,8 +242,6 @@ do {
             }
         }
         4{
-            # packages 
-            # firefox[yes], office 2010[yes], libre office[yes], adobe reader dc, vnc, anydesk, accrobat, chrome, teams, zoom, thetris  
             while  ($choice -notin ('y','n','') ) {
                 Write-Host -ForegroundColor Green -NoNewline "[+] Voulez-vous proceder a l'installation des packages [y/n]: "
                 $choice = Read-Host
@@ -244,14 +251,38 @@ do {
                     "no"
                 }
                 default {
-                    $inst = $null
+                    $toInstall = @()
                     foreach ($item in $programs) {
-                        while ($inst -notin ('y','n','')) {
-                            Write-host -foregroundColor Yellow -nonewline "installer $item [y/n]: "
-                            $inst = Read-Host
+                        Write-Host -NoNewline -ForegroundColor Yellow "Voulez-vous installer $item [y/n]: "
+                        $install = Read-Host
+                        while ($install -notin ('y','n','')) {
+                            Write-Host -NoNewline -ForegroundColor Yellow "Voulez-vous installer $item [y/n]: "
+                            $install = Read-Host
+                        }
+                        switch ($install) {
+                            'n' { 
+                                break
+                            }
+                            Default {
+                                if ($install -in ('y','') ) {       
+                                    $toInstall += $item
+                                }
+                            }
                         }
                     }
+                    $programs = $toInstall
+                    startProccess
                 }
+            }
+        }
+        5{
+            while  ($choice -notin ('y','n','') ) {
+                Write-Host -ForegroundColor Green -NoNewline "[+] Voulez-vous redemarrer l'ordinateur maintenant [y/n]: "
+                $choice = Read-Host
+            }
+            switch($choice){
+                'n'{exit}
+                Default{Restart-computer -Force -Confirm:$false}
             }
         }
         Default {
