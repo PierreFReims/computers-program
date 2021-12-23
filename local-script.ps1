@@ -66,7 +66,7 @@ do {
         3 - Quitter le domaine actuel
         4 - Installation de package
         5 - Redemarrer l'ordinateur
-        q - quitter le programme
+        q - Quitter le programme
     "
     Write-Host -ForegroundColor DarkCyan -NoNewline "[+] Choix: "
     $choice = Read-Host
@@ -186,7 +186,7 @@ do {
                                 }
                                 switch($choice){
                                     y{Restart-computer -Force -Confirm:$false}
-                                    n{exit}
+                                    n{break}
                                 }
                             }
                         }
@@ -230,14 +230,14 @@ do {
                     }
                     switch($choice){
                         y{Restart-computer -Force -Confirm:$false}
-                        n{exit}
+                        n{break}
                     }
                 }
                 'n' { 
                     break
                 }
                 Default {
-                    exit
+                    break
                 }
             }
         }
@@ -281,12 +281,12 @@ do {
                 $choice = Read-Host
             }
             switch($choice){
-                'n'{exit}
+                'n'{break}
                 Default{Restart-computer -Force -Confirm:$false}
             }
         }
         Default {
-            Exit
+            break
         }
     } 
 } until ($choice -eq 'q')
